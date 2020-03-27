@@ -1,7 +1,7 @@
 use envconfig::Envconfig;
 use envconfig_derive::Envconfig;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use hyper::{Body, Response, Server};
 use lazy_static::lazy_static;
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -21,8 +21,8 @@ async fn main() {
         static ref CONFIG: Config = Config::init().expect("Failed to parse environment");
     }
 
-    let make_svc = make_service_fn(|_| async move {
-        Ok::<_, Infallible>(service_fn(move |_: Request<Body>| async move {
+    let make_svc = make_service_fn(|_| async {
+        Ok::<_, Infallible>(service_fn(|_| async {
             Ok::<_, Infallible>(Response::new(Body::from("Hello world!")))
         }))
     });
