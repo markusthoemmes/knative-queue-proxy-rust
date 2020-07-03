@@ -5,6 +5,7 @@ use hyper::{Body, Response, Server};
 use lazy_static::lazy_static;
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use futures_intrusive::sync::Semaphore;
 
 #[derive(Envconfig)]
 pub struct Config {
@@ -19,10 +20,13 @@ pub struct Config {
 async fn main() {
     lazy_static! {
         static ref CONFIG: Config = Config::init().expect("Failed to parse environment");
+        static ref QUEUE: Semaphore = Semaphore::new(false, 1);
     }
 
     let make_svc = make_service_fn(|_| async {
         Ok::<_, Infallible>(service_fn(|_| async {
+            QUEUE.acquire(1).await;
+
             Ok::<_, Infallible>(Response::new(Body::from("Hello world!")))
         }))
     });

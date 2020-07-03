@@ -5,8 +5,9 @@ authors = ["Markus Thömmes <markusthoemmes@me.com>"]
 edition = "2018"
 
 [dependencies]
-hyper = "0.13"
-tokio = { version = "0.2", features = ["full"] }
 envconfig = "0.7"
 envconfig_derive = "0.7"
+futures-intrusive = "0.3"
+hyper = "0.13"
 lazy_static = "1.4.0"
+tokio = { version = "0.2", features = ["full"] }
