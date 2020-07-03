@@ -1,11 +1,11 @@
-use envconfig::Envconfig;
 use envconfig_derive::Envconfig;
-use hyper::service::{make_service_fn, service_fn};
+use envconfig::Envconfig;
+use futures_intrusive::sync::Semaphore;
 use hyper::{Body, Response, Server};
+use hyper::service::{make_service_fn, service_fn};
 use lazy_static::lazy_static;
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use futures_intrusive::sync::Semaphore;
 
 #[derive(Envconfig)]
 pub struct Config {
@@ -20,14 +20,22 @@ pub struct Config {
 async fn main() {
     lazy_static! {
         static ref CONFIG: Config = Config::init().expect("Failed to parse environment");
-        static ref QUEUE: Semaphore = Semaphore::new(false, 1);
+        static ref QUEUE: Semaphore = Semaphore::new(false, CONFIG.container_concurrency * 10);
+        static ref ACTIVE: Semaphore = Semaphore::new(false, CONFIG.container_concurrency);
     }
 
     let make_svc = make_service_fn(|_| async {
         Ok::<_, Infallible>(service_fn(|_| async {
-            QUEUE.acquire(1).await;
-
-            Ok::<_, Infallible>(Response::new(Body::from("Hello world!")))
+            match QUEUE.try_acquire(1) {
+                Some(_) => {
+                    ACTIVE.acquire(1).await;
+                    Ok::<_, Infallible>(Response::new(Body::from("Hello world!")))
+                },
+                None => {
+                    let res = Response::builder().status(503).body(Body::from("overload")).unwrap();
+                    Ok::<_, Infallible>(res)
+                }
+            }
         }))
     });
 
