@@ -1,4 +1,3 @@
-use envconfig_derive::Envconfig;
 use envconfig::Envconfig;
 use futures_intrusive::sync::Semaphore;
 use hyper::{Body, Response, Server};
@@ -19,7 +18,7 @@ pub struct Config {
 #[tokio::main]
 async fn main() {
     lazy_static! {
-        static ref CONFIG: Config = Config::init().expect("Failed to parse environment");
+        static ref CONFIG: Config = Config::init_from_env().expect("Failed to parse environment");
         static ref QUEUE: Semaphore = Semaphore::new(false, CONFIG.container_concurrency * 10);
         static ref ACTIVE: Semaphore = Semaphore::new(false, CONFIG.container_concurrency);
     }
